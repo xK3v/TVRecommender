@@ -7,18 +7,18 @@ main :: IO () --Einstiegspunkt
 main = do
   putStrLn "\nLoading TVRecommender..."
   printHelp
-  mainmenu
+  mainMenu
 
 
-mainmenu :: IO () --Nimmt Eingabe entgegen und leitet entsprechend weiter
-mainmenu = do
+mainMenu :: IO () --Nimmt Eingabe entgegen und leitet entsprechend weiter
+mainMenu = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
   case input of
-    "list actors" -> getActors >> mainmenu
-    "help" -> printHelp >> mainmenu
+    "list actors" -> getActors >> mainMenu
+    "help" -> printHelp >> mainMenu
     "exit" -> putStrLn "Thanks for using TVRecommender!"
-    _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainmenu
+    _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu
 
 
 printHelp :: IO () --Gibt Liste der möglichen Befehle sowie Aufforderung zur Eingabe aus
@@ -30,8 +30,8 @@ printHelp = do
 
 getActors :: IO ()
 getActors = do
-  fileexists <- doesFileExist "actors.txt"
-  if fileexists then do
+  fileExists <- doesFileExist "actors.txt"
+  if fileExists then do
     putStrLn ""
     handle <- openFile "actors.txt" ReadMode
     actorText <- hGetContents handle
