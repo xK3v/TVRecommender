@@ -30,8 +30,11 @@ printHelp = do
 
 getActors :: IO ()
 getActors = do
-  putStrLn ""
-  handle <- openFile "actors.txt" ReadMode
-  actorText <- hGetContents handle
-  putStrLn actorText
-  hClose handle
+  fileexists <- doesFileExist "actors.txt"
+  if fileexists then do
+    putStrLn ""
+    handle <- openFile "actors.txt" ReadMode
+    actorText <- hGetContents handle
+    putStrLn actorText
+    hClose handle
+  else putStrLn "\nFile 'actors.txt' does not exist yet. Create it by adding your first actor."
