@@ -14,7 +14,7 @@ mainmenu = do
   case input of
     "help" -> printHelp >> mainmenu
     "exit" -> putStrLn "Thanks for using TVRecommender!"
-    _ -> putStrLn ("Command '" ++ input ++ "' is unknown!\n\nPlease enter a command or type 'help' for assistance!") >> mainmenu
+    _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainmenu
 
 
 printHelp :: IO () --Gibt Liste der möglichen Befehle sowie Aufforderung zur Eingabe aus
