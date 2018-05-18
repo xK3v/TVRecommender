@@ -2,15 +2,14 @@
 
 main :: IO () --Einstiegspunkt
 main = do
-  putStrLn ""
-  putStrLn "Loading TVRecommender..."
-  putStrLn ""
+  putStrLn "\nLoading TVRecommender..."
   printHelp
   mainmenu
 
 
 mainmenu :: IO () --Nimmt Eingabe entgegen und leitet entsprechend weiter
 mainmenu = do
+  putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
   case input of
     "help" -> printHelp >> mainmenu
@@ -20,8 +19,6 @@ mainmenu = do
 
 printHelp :: IO () --Gibt Liste der möglichen Befehle sowie Aufforderung zur Eingabe aus
 printHelp = do
-  putStrLn "This Program supports the following commands:"
+  putStrLn "\nThis Program supports the following commands:"
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
-  putStrLn ""
-  putStrLn "Please enter a command or type 'help' for assistance!"
