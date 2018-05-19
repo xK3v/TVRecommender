@@ -3,6 +3,7 @@
 import System.IO
 import System.Directory
 import Data.List
+import Control.Concurrent
 
 main :: IO () --Entry point
 main = do
@@ -18,6 +19,7 @@ mainMenu = do
   case unwords $ take 2 $ words input of
     "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu
     "list actors" -> listActors >> mainMenu
+    "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu
     "help" -> printHelp >> mainMenu
     "exit" -> putStrLn "Thanks for using TVRecommender!"
     _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu
@@ -26,8 +28,9 @@ mainMenu = do
 printHelp :: IO () --show list of all the possible commands
 printHelp = do
   putStrLn "\nThis Program supports the following commands:"
-  putStrLn "\t 'add actor' ... add a given name to your list of favourite actors"
+  putStrLn "\t 'add actor' name ... add a given name to your list of favourite actors"
   putStrLn "\t 'list actors' ... shows a list of all your favourite actors"
+  putStrLn "\t 'delete actor' name ... removes the given name from your list of favourite actors"
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
@@ -63,4 +66,7 @@ addActor name = do
 --TODO: Implement removeActor using find
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
-  putStrLn ""
+  actorList <- readActors
+  let newActorList = filter (/=name) actorList
+  threadDelay 1000
+  writeFile "actors.txt" $ unlines newActorList
