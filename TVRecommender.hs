@@ -4,14 +4,14 @@ import System.IO
 import System.Directory
 import Data.List
 
-main :: IO () --Einstiegspunkt
+main :: IO () --Entry point
 main = do
   putStrLn "\nLoading TVRecommender..."
   printHelp
   mainMenu
 
 
-mainMenu :: IO () --Nimmt Eingabe entgegen und leitet entsprechend weiter
+mainMenu :: IO () --takes input and calls relevant function(s)
 mainMenu = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
@@ -23,7 +23,7 @@ mainMenu = do
     _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu
 
 
-printHelp :: IO () --Gibt Liste der möglichen Befehle sowie Aufforderung zur Eingabe aus
+printHelp :: IO () --show list of all the possible commands
 printHelp = do
   putStrLn "\nThis Program supports the following commands:"
   putStrLn "\t 'add actor' ... add a given name to your list of favourite actors"
@@ -32,7 +32,8 @@ printHelp = do
   putStrLn "\t 'exit' ... terminate the application"
 
 
-readActors :: IO [String]
+--TODO: sort independently of upper/lower case
+readActors :: IO [String] --reads actors from txt file and returns them as a list of strings, creates file if necessary
 readActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
@@ -42,14 +43,14 @@ readActors = do
     writeFile "actors.txt" "" >> return []
 
 
-listActors :: IO ()
+listActors :: IO () --shows list of all actors in txt file
 listActors = do
   putStrLn ""
   actorList <- readActors
   putStrLn $ unlines actorList
 
 
-addActor :: String -> IO ()
+addActor :: String -> IO () --adds a new actor to txt file
 addActor name = do
   actorList <- readActors
   let cleanActorList = filter (/="") actorList --remove empty lines
@@ -59,7 +60,7 @@ addActor name = do
   else
     writeFile "actors.txt" $ unlines cleanActorList
 
-
-removeActor :: String -> IO ()
+--TODO: Implement removeActor using find
+removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   putStrLn ""
