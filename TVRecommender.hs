@@ -35,8 +35,7 @@ printHelp = do
 readActors :: IO [String]
 readActors = do
   actors <- readFile "actors.txt"
-  --let actorsClean = filter (/="") $ lines actors
-  return $ sort $filter (/="") $ lines actors
+  return $ sort $ filter (/="") $ lines actors
 
 
 getActors :: IO ()
@@ -44,11 +43,8 @@ getActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
     putStrLn ""
-    --handle <- openFile "actors.txt" ReadMode
-    --actorText <- hGetContents handle
     actorList <- readActors
     putStrLn $ unlines actorList
-    --hClose handle
   else putStrLn "\nFile 'actors.txt' does not exist yet. Create it by adding your first actor."
 
 
@@ -56,11 +52,13 @@ addActor :: String -> IO ()
 addActor name = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
-    --actors <- readFile "actors.txt"
-    --let actorList = lines actors
     actorList <- readActors
-    if name `notElem` actorList then appendFile "actors.txt" ("\n" ++ name)
-    else putStr ""
+    --if name `notElem` actorList then appendFile "actors.txt" ("\n" ++ name)
+    if name `notElem` actorList then do
+      let newActorList = insert name actorList
+      writeFile "actors.txt" $ unlines newActorList
+    else
+      writeFile "actors.txt" $ unlines actorList
   else writeFile "actors.txt" name
 
 
