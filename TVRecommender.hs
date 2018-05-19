@@ -1,9 +1,11 @@
 --Written by Kevin Kazianschütz
 
-import System.IO
+{-# LANGUAGE BangPatterns #-}
+
+
+--import System.IO
 import System.Directory
 import Data.List
-import Control.Concurrent
 
 main :: IO () --Entry point
 main = do
@@ -67,6 +69,5 @@ addActor name = do
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   actorList <- readActors
-  let newActorList = filter (/=name) actorList
-  threadDelay 1000
+  let !newActorList = filter (/=name) actorList --BangPatterns needed because lazy evaluation produces an IO error here
   writeFile "actors.txt" $ unlines newActorList
