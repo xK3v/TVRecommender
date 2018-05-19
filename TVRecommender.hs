@@ -37,7 +37,7 @@ readActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
     actors <- readFile "actors.txt"
-    return $ sort $ filter (/="") $ lines actors
+    return $ sort $ filter (/="") $ lines actors --sort list of actors, in case actors have been inserted manually
   else
     writeFile "actors.txt" "" >> return []
 
@@ -52,11 +52,12 @@ listActors = do
 addActor :: String -> IO ()
 addActor name = do
   actorList <- readActors
-  if name `notElem` actorList then do
-    let newActorList = insert name actorList
+  let cleanActorList = filter (/="") actorList --remove empty lines
+  if name `notElem` cleanActorList then do
+    let newActorList = insert name cleanActorList  --insert actor
     writeFile "actors.txt" $ unlines newActorList
   else
-    writeFile "actors.txt" $ unlines actorList
+    writeFile "actors.txt" $ unlines cleanActorList
 
 
 removeActor :: String -> IO ()
