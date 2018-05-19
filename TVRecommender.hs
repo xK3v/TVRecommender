@@ -2,6 +2,7 @@
 
 import System.IO
 import System.Directory
+import Data.List
 
 main :: IO () --Einstiegspunkt
 main = do
@@ -30,23 +31,40 @@ printHelp = do
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
+
+readActors :: IO [String]
+readActors = do
+  actors <- readFile "actors.txt"
+  --let actorsClean = filter (/="") $ lines actors
+  return $ sort $filter (/="") $ lines actors
+
+
 getActors :: IO ()
 getActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
     putStrLn ""
-    handle <- openFile "actors.txt" ReadMode
-    actorText <- hGetContents handle
-    putStrLn actorText
-    hClose handle
+    --handle <- openFile "actors.txt" ReadMode
+    --actorText <- hGetContents handle
+    actorList <- readActors
+    putStrLn $ unlines actorList
+    --hClose handle
   else putStrLn "\nFile 'actors.txt' does not exist yet. Create it by adding your first actor."
+
 
 addActor :: String -> IO ()
 addActor name = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
-    actors <- readFile "actors.txt"
-    let actorList = lines actors
+    --actors <- readFile "actors.txt"
+    --let actorList = lines actors
+    actorList <- readActors
     if name `notElem` actorList then appendFile "actors.txt" ("\n" ++ name)
-    else putStrLn ""
+    else putStr ""
   else writeFile "actors.txt" name
+
+
+removeActor :: String -> IO ()
+removeActor name = do
+  fileExists <- doesFileExist "actors.txt"
+  putStrLn ""
