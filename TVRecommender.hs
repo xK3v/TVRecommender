@@ -49,4 +49,4 @@ addActor name = do
     let actorList = lines actors
     if name `notElem` actorList then appendFile "actors.txt" ("\n" ++ name)
     else putStrLn ""
-  else writeFile "actors.txt" "" 
+  else writeFile "actors.txt" name
