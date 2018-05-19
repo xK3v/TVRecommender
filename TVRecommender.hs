@@ -6,6 +6,7 @@
 --import System.IO
 import System.Directory
 import Data.List
+import Data.Char
 
 main :: IO () --Entry point
 main = do
@@ -18,7 +19,7 @@ mainMenu :: IO () --takes input and calls relevant function(s)
 mainMenu = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
-  case unwords $ take 2 $ words input of
+  case map toLower $ unwords $ take 2 $ words input of
     "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu
     "list actors" -> listActors >> mainMenu
     "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu
