@@ -56,6 +56,7 @@ listActors = do
   putStrLn $ unlines actorList
 
 
+--TODO: check for any upper/lowercase variants before adding new actor
 addActor :: String -> IO () --adds a new actor to txt file
 addActor name = do
   actorList <- readActors
@@ -66,9 +67,10 @@ addActor name = do
   else
     writeFile "actors.txt" $ unlines cleanActorList
 
---TODO: Implement removeActor using find
+--TODO: check why 'avoid lambda'?
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   actorList <- readActors
-  let !newActorList = filter (/=name) actorList --BangPatterns needed because lazy evaluation produces an IO error here
+  let !newActorList = filter (/=map toLower name) $ map (\n -> map toLower n) actorList --BangPatterns needed because lazy evaluation produces an IO error here
+  --let !newActorList = [map toLower x | x <- actorList, x/= map toLower name]
   writeFile "actors.txt" $ unlines newActorList
