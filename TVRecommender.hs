@@ -17,7 +17,7 @@ mainMenu = do
   input <- getLine
   case unwords $ take 2 $ words input of
     "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu
-    "list actors" -> getActors >> mainMenu
+    "list actors" -> listActors >> mainMenu
     "help" -> printHelp >> mainMenu
     "exit" -> putStrLn "Thanks for using TVRecommender!"
     _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu
@@ -34,35 +34,31 @@ printHelp = do
 
 readActors :: IO [String]
 readActors = do
-  actors <- readFile "actors.txt"
-  return $ sort $ filter (/="") $ lines actors
-
-
-getActors :: IO ()
-getActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
-    putStrLn ""
-    actorList <- readActors
-    putStrLn $ unlines actorList
-  else putStrLn "\nFile 'actors.txt' does not exist yet. Create it by adding your first actor."
+    actors <- readFile "actors.txt"
+    return $ sort $ filter (/="") $ lines actors
+  else
+    writeFile "actors.txt" "" >> return []
+
+
+listActors :: IO ()
+listActors = do
+  putStrLn ""
+  actorList <- readActors
+  putStrLn $ unlines actorList
 
 
 addActor :: String -> IO ()
 addActor name = do
-  fileExists <- doesFileExist "actors.txt"
-  if fileExists then do
-    actorList <- readActors
-    --if name `notElem` actorList then appendFile "actors.txt" ("\n" ++ name)
-    if name `notElem` actorList then do
-      let newActorList = insert name actorList
-      writeFile "actors.txt" $ unlines newActorList
-    else
-      writeFile "actors.txt" $ unlines actorList
-  else writeFile "actors.txt" name
+  actorList <- readActors
+  if name `notElem` actorList then do
+    let newActorList = insert name actorList
+    writeFile "actors.txt" $ unlines newActorList
+  else
+    writeFile "actors.txt" $ unlines actorList
 
 
 removeActor :: String -> IO ()
 removeActor name = do
-  fileExists <- doesFileExist "actors.txt"
   putStrLn ""
