@@ -39,5 +39,5 @@ printHelp = do
 
 getTags = do
   site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
-  let varia = L8.unpack $ parseTags site
-  putStrLn $ "testing" ++ varia
+  let varia = L8.unpack site
+  putStrLn varia
