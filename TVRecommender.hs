@@ -23,6 +23,7 @@ mainmenu :: IO () --Nimmt Eingabe entgegen und leitet entsprechend weiter
 mainmenu = do
   input <- getLine
   case input of
+    "tags" -> getTags
     "help" -> printHelp >> mainmenu
     "exit" -> putStrLn "Thanks for using TVRecommender!"
     _ -> putStrLn ("Command '" ++ input ++ "' is unknown!\n\nPlease enter a command or type 'help' for assistance!") >> mainmenu
@@ -40,4 +41,5 @@ printHelp = do
 getTags = do
   site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
   let varia = L8.unpack site
-  putStrLn varia
+  let testtext = gettest $ parseTags varia where gettest = innerText . take 2 . dropWhile (~/= "<div class=\"station\">")
+  putStrLn testtext
