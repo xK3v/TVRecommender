@@ -1,5 +1,6 @@
 --Written by Kevin Kazianschütz
 
+import GHC.IO.Encoding
 import Data.List
 import Control.Monad
 import Control.Monad.IO.Class
@@ -9,6 +10,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 
 main :: IO () --Einstiegspunkt
 main = do
+  setLocaleEncoding utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
   putStrLn ""
@@ -43,7 +45,8 @@ getTags = do
   let varia = parseTags $ L8.unpack site
   --let gettest = innerText . take 2 . dropWhile (~/= "<div class=\"station\">")
   --let testtext = gettest $ parseTags varia --where
-  let broadcasts = map f $ sections (~== TagOpen "div" [("class","genre")]) varia
-  putStrLn $ unlines broadcasts
-  where
-    f xs = fromTagText (xs !! 2)
+  --let broadcasts = map f $ sections (~== TagOpen "div" [("class","genre")]) varia
+  --putStrLn $ unlines broadcasts
+  --where
+  --  f xs = fromTagText (xs !! 2)
+  putStrLn $ renderTags $ drop 5 $ take 6 varia
