@@ -5,18 +5,22 @@ import Data.List
 import Control.Monad
 import Control.Monad.IO.Class
 import Network.HTTP.Conduit
-import Text.HTML.TagSoup
+--import Text.HTML.TagSoup
 import qualified Data.ByteString.Lazy.Char8 as L8
+
+import Text.XML.HXT.Core
+import Text.HandsomeSoup
+
 
 main :: IO () --Einstiegspunkt
 main = do
-  setLocaleEncoding utf8
+  setLocaleEncoding GHC.IO.Encoding.utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
   putStrLn ""
   printHelp
   mainmenu
-  putStrLn "testing:"
+  putStrLn "end"
   --getTags
   --L8.putStr =<< simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
 
@@ -39,7 +43,7 @@ printHelp = do
   putStrLn ""
   putStrLn "Please enter a command or type 'help' for assistance!"
 
-
+{-
 getTags = do
   site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
   let varia = parseTags $ L8.unpack site
@@ -50,3 +54,32 @@ getTags = do
   --where
   --  f xs = fromTagText (xs !! 2)
   putStrLn $ renderTags $ drop 5 $ take 6 varia
+-}
+getTags :: IO ()
+getTags = do
+  site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
+  let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
+  --let parsed2 = fromUrl "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
+  --sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> getAttrValue "title"
+  sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> removeAllWhiteSpace /> deep getText
+  zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
+  sendungen_ws <- runX $ parsed //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  -- TODO: nur erste sendung jedes "bc-item" nehmen
+  let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
+  let zipped = zip3 zeiten sender sendungen
+  let addTuple (a,b,c) = a ++ "\t\t" ++ b ++ "\t\t" ++ c
+  mapM_ putStrLn sender
+  putStrLn ""
+  mapM_ putStrLn zeiten
+  putStrLn ""
+  mapM_ putStrLn sendungen
+  putStrLn ""
+  mapM_ putStrLn $ map addTuple zipped
+
+{-
+--programList :: Num a => [String] -> [String] -> [String] -> [(a,String,String,String)]
+programList zeiten sender sendungen = programListRec 1 zeiten sender sendungen [] where
+  programListRec _ [] [] [] list = list
+  programListRec n (hz:tz) (hs:ts) (hf:tf) list = programListRec (n+1) tz ts tf ((n,hz,hs,hf) : list)
+-}
