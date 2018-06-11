@@ -2,8 +2,8 @@
 
 import GHC.IO.Encoding
 import Data.List
-import Control.Monad
-import Control.Monad.IO.Class
+--import Control.Monad
+--import Control.Monad.IO.Class
 import Network.HTTP.Conduit
 --import Text.HTML.TagSoup
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -60,28 +60,19 @@ getTags = do
 getTags :: IO ()
 getTags = do
   site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
+
   let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
-  --let parsed2 = fromUrl "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
   --sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> getAttrValue "title"
   sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> removeAllWhiteSpace /> deep getText
   zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
   sendungen_ws <- runX $ parsed //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  genre_ws <- runX $ parsed //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
   --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
   -- TODO: nur erste sendung jedes "bc-item" nehmen
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
-  let zipped = zip4 [1..length sendungen + 1] zeiten sender sendungen
-  let addTuple (n,t_zeiten,t_sender,t_sendungen) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen
-  mapM_ putStrLn sender
-  putStrLn ""
-  mapM_ putStrLn zeiten
-  putStrLn ""
-  mapM_ putStrLn sendungen
-  putStrLn ""
-  mapM_ putStrLn $ map addTuple zipped
+  let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
+  let zipped = zip5 [1..length sendungen + 1] zeiten sender sendungen genre
+  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  --mapM_ putStrLn genre
 
-{-
---programList :: Num a => [String] -> [String] -> [String] -> [(a,String,String,String)]
-programList zeiten sender sendungen = programListRec 1 zeiten sender sendungen [] where
-  programListRec _ [] [] [] list = list
-  programListRec n (hz:tz) (hs:ts) (hf:tf) list = programListRec (n+1) tz ts tf ((n,hz,hs,hf) : list)
--}
+  mapM_ putStrLn $ map addTuple zipped
