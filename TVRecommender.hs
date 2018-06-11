@@ -84,11 +84,12 @@ addActor name = do
   else
     writeFile "actors.txt" $ unlines cleanActorList
 
---TODO: check why 'avoid lambda'?
+--TODO: check why 'avoid lambda'? DONE?!
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   actorList <- readActors
-  let !newActorList = filter (/=map toLower name) $ map (\n -> map toLower n) actorList --BangPatterns needed because lazy evaluation produces an IO error here
+  --let !newActorList = filter (/=map toLower name) $ map (\n -> map toLower n) actorList --BangPatterns needed because lazy evaluation produces an IO error here
+  let !newActorList = filter (/=map toLower name) $ map (map toLower) actorList --BangPatterns needed because lazy evaluation produces an IO error here
   --let !newActorList = [map toLower x | x <- actorList, x/= map toLower name]
   writeFile "actors.txt" $ unlines newActorList
 
@@ -109,4 +110,5 @@ getTags = do
   let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
   --mapM_ putStrLn genre
 
-  mapM_ putStrLn $ map addTuple zipped
+  --mapM_ putStrLn $ map addTuple zipped
+  putStrLn $ unlines $ map addTuple zipped
