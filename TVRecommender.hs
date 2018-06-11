@@ -5,19 +5,17 @@
 import GHC.IO.Encoding
 import Data.List
 import Data.Char
+import qualified Data.ByteString.Lazy.Char8 as L8
+import Text.Printf (printf)
+import System.Directory
 --import Control.Monad
 --import Control.Monad.IO.Class
-import Network.HTTP.Conduit
---import Text.HTML.TagSoup
-import qualified Data.ByteString.Lazy.Char8 as L8
 
+--These have to be installed first:
+import Network.HTTP.Conduit
 import Text.XML.HXT.Core
 import Text.HandsomeSoup
-
-import Text.Printf (printf)
-
-import System.Directory
-
+--import Text.HTML.TagSoup
 
 main :: IO () --Einstiegspunkt
 main = do
@@ -34,12 +32,11 @@ mainMenu = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
   case map toLower $ unwords $ take 2 $ words input of
-    "list" -> getTags >> mainMenu
+    "list" -> listBroadcasts >> mainMenu
     "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu
     "list actors" -> listActors >> mainMenu
     "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu
     "help" -> printHelp >> mainMenu
-
     "exit" -> putStrLn "Thanks for using TVRecommender!"
     _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu
 
@@ -93,8 +90,8 @@ removeActor name = do
   --let !newActorList = [map toLower x | x <- actorList, x/= map toLower name]
   writeFile "actors.txt" $ unlines newActorList
 
-getTags :: IO ()
-getTags = do
+listBroadcasts :: IO ()
+listBroadcasts = do
   site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
   let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
   --sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> getAttrValue "title"
@@ -108,7 +105,6 @@ getTags = do
   let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
   let zipped = zip5 [1..length sendungen + 1] zeiten sender sendungen genre
   let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
-  --mapM_ putStrLn genre
 
   --mapM_ putStrLn $ map addTuple zipped
   putStrLn $ unlines $ map addTuple zipped
