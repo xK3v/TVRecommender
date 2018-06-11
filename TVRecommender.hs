@@ -11,6 +11,8 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Text.XML.HXT.Core
 import Text.HandsomeSoup
 
+import Text.Printf (printf)
+
 
 main :: IO () --Einstiegspunkt
 main = do
@@ -67,8 +69,8 @@ getTags = do
   --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
   -- TODO: nur erste sendung jedes "bc-item" nehmen
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
-  let zipped = zip3 zeiten sender sendungen
-  let addTuple (a,b,c) = a ++ "\t\t" ++ b ++ "\t\t" ++ c
+  let zipped = zip4 [1..length sendungen + 1] zeiten sender sendungen
+  let addTuple (n,t_zeiten,t_sender,t_sendungen) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen
   mapM_ putStrLn sender
   putStrLn ""
   mapM_ putStrLn zeiten
