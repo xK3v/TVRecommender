@@ -17,6 +17,16 @@ import Text.XML.HXT.Core
 import Text.HandsomeSoup
 --import Text.HTML.TagSoup
 
+data Broadcast = Broadcast {
+  bcId :: Int,
+  bcName :: String,
+  bcTime :: String,
+  bcStation :: String,
+  bcGenre :: String} deriving (Read,Eq)
+
+instance Show Broadcast where
+  show broadcast = printf "%03d." (bcId broadcast) ++ "\t" ++ bcTime broadcast ++ "\t" ++ printf "%- 16s" (bcStation broadcast) ++ "\t" ++ bcName broadcast ++ ", " ++ bcGenre broadcast
+
 main :: IO () --Einstiegspunkt
 main = do
   setLocaleEncoding GHC.IO.Encoding.utf8
@@ -103,8 +113,16 @@ listBroadcasts = do
   -- TODO: nur erste sendung jedes "bc-item" nehmen
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
   let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
-  let zipped = zip5 [1..length sendungen + 1] zeiten sender sendungen genre
-  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
-
+  let zipped = zip5 [1..length sendungen + 1] sendungen zeiten sender genre
+  --let addTuple (n,t_sendungen,t_zeiten,t_sender,t_genre) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  --putStrLn $ unlines $ map addTuple zipped
+  let bcl = map (\(a,b,c,d,e) -> Broadcast {bcId = a, bcName = b, bcTime = c, bcStation = d, bcGenre = e}) zipped
+  putStrLn $ unlines $ map show bcl
   --mapM_ putStrLn $ map addTuple zipped
-  putStrLn $ unlines $ map addTuple zipped
+
+{-
+createBcList :: String -> String -> String -> String -> String -> IO Broadcast
+createBcList uid name time station genre = do
+  let bc =  Broadcast {bcId = uid, bcName = name, bcTime = time, bcStation = station, bcGenre = genre}
+  return bc
+-}
