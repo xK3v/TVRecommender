@@ -2,17 +2,31 @@
 
 {-# LANGUAGE BangPatterns #-}
 
-
---import System.IO
-import System.Directory
+import GHC.IO.Encoding
 import Data.List
 import Data.Char
+--import Control.Monad
+--import Control.Monad.IO.Class
+import Network.HTTP.Conduit
+--import Text.HTML.TagSoup
+import qualified Data.ByteString.Lazy.Char8 as L8
 
-main :: IO () --Entry point
+import Text.XML.HXT.Core
+import Text.HandsomeSoup
+
+import Text.Printf (printf)
+
+import System.Directory
+
+
+main :: IO () --Einstiegspunkt
 main = do
-  putStrLn "\nLoading TVRecommender..."
+  setLocaleEncoding GHC.IO.Encoding.utf8
+  putStrLn ""
+  putStrLn "Loading TVRecommender..."
+  putStrLn ""
   printHelp
-  mainMenu
+  mainmenu
 
 
 mainMenu :: IO () --takes input and calls relevant function(s)
@@ -20,10 +34,12 @@ mainMenu = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
   case map toLower $ unwords $ take 2 $ words input of
+    "list" -> getTags >> mainMenu
     "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu
     "list actors" -> listActors >> mainMenu
     "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu
     "help" -> printHelp >> mainMenu
+
     "exit" -> putStrLn "Thanks for using TVRecommender!"
     _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu
 
@@ -74,3 +90,22 @@ removeActor name = do
   let !newActorList = filter (/=map toLower name) $ map (\n -> map toLower n) actorList --BangPatterns needed because lazy evaluation produces an IO error here
   --let !newActorList = [map toLower x | x <- actorList, x/= map toLower name]
   writeFile "actors.txt" $ unlines newActorList
+
+getTags :: IO ()
+getTags = do
+  site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
+  let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
+  --sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> getAttrValue "title"
+  sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> removeAllWhiteSpace /> deep getText
+  zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
+  sendungen_ws <- runX $ parsed //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  genre_ws <- runX $ parsed //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
+  --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  -- TODO: nur erste sendung jedes "bc-item" nehmen
+  let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
+  let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
+  let zipped = zip5 [1..length sendungen + 1] zeiten sender sendungen genre
+  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  --mapM_ putStrLn genre
+
+  mapM_ putStrLn $ map addTuple zipped
