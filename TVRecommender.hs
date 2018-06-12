@@ -67,7 +67,7 @@ parseSite = do
   let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
   let link = map (\str -> "https://www.tele.at" ++ str) link_short
   let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
-  let test = map parseDetails zipped
+  let test = map parseDetails zipped -- TODO: Liste von tuples mit allen relevanten informationen
   return zipped
 
 
