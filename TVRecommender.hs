@@ -99,12 +99,14 @@ listBroadcasts = do
   zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
   sendungen_ws <- runX $ parsed //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
   genre_ws <- runX $ parsed //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
+  link_short <- runX $ parsed //> hasAttrValue "class" (== "title") >>> getChildren >>> hasName "a" >>> getAttrValue "href"
   --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
   -- TODO: nur erste sendung jedes "bc-item" nehmen
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
   let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
-  let zipped = zip5 [1..length sendungen + 1] zeiten sender sendungen genre
-  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  let link = map (\str -> "https://www.tele.at" ++ str) link_short
+  let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
+  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
 
   --mapM_ putStrLn $ map addTuple zipped
   putStrLn $ unlines $ map addTuple zipped
