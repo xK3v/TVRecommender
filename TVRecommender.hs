@@ -67,7 +67,18 @@ parseSite = do
   let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
   let link = map (\str -> "https://www.tele.at" ++ str) link_short
   let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
+  let test = map parseDetails zipped
   return zipped
+
+
+parseDetails :: (Int,String,String,String,String,String) -> IO (Int,String,String,String,String,String,[String])
+parseDetails (n,a,b,c,d,link) = do
+  detailSite <- simpleHttp link
+  let detailsParsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSite
+  text <- runX $ detailsParsed //> hasAttrValue "class" (== "long-text") >>> deep getText
+  actors <- runX $ detailsParsed //> hasAttrValue "class" (== "actor") >>> getChildren >>> hasName "span" >>> deep getText
+  let detailBcs = (n,a,b,c,d,head text,actors)
+  return detailBcs
 
 
 readActors :: IO [String] --reads actors from txt file and returns them as a list of strings, creates file if necessary
