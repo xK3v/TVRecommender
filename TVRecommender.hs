@@ -52,13 +52,13 @@ printHelp = do
   putStrLn "\t 'exit' ... terminate the application"
 
 
---TODO: sort independently of upper/lower case
 readActors :: IO [String] --reads actors from txt file and returns them as a list of strings, creates file if necessary
 readActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
     actors <- readFile "actors.txt"
-    return $ sort $ filter (/="") $ lines actors --sort list of actors, in case actors have been inserted manually
+    --return $ sort $ filter (/="") $ lines actors --sort list of actors, in case actors have been inserted manually
+    return $ sortBy (\l r -> map toLower l `compare` map toLower r) $ filter (/="") $ lines actors --sort list of actors, in case actors have been inserted manually
   else
     writeFile "actors.txt" "" >> return []
 
