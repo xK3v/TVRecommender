@@ -22,23 +22,24 @@ main = do
   setLocaleEncoding GHC.IO.Encoding.utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
-  putStrLn ""
+  let info = parseSite
+  putStrLn "Got Content!"
   printHelp
-  mainMenu
+  mainMenu info
 
 
-mainMenu :: IO () --takes input and calls relevant function(s)
-mainMenu = do
+mainMenu :: IO [(Int,String,String,String,String,String)] -> IO () --takes input and calls relevant function(s)
+mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
   case map toLower $ unwords $ take 2 $ words input of
-    "list" -> listBroadcasts >> mainMenu
-    "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu
-    "list actors" -> listActors >> mainMenu
-    "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu
-    "help" -> printHelp >> mainMenu
+    "list" -> listBroadcasts info >> mainMenu info
+    "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
+    "list actors" -> listActors >> mainMenu info
+    "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu info
+    "help" -> printHelp >> mainMenu info
     "exit" -> putStrLn "Thanks for using TVRecommender!"
-    _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu
+    _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
 
 
 printHelp :: IO () --show list of all the possible commands
@@ -50,6 +51,23 @@ printHelp = do
   putStrLn "\t 'delete actor' name ... removes the given name from your list of favourite actors"
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
+
+parseSite :: IO [(Int,String,String,String,String,String)]
+parseSite = do
+  site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
+  let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
+  sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> removeAllWhiteSpace /> deep getText
+  zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
+  sendungen_ws <- runX $ parsed //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  genre_ws <- runX $ parsed //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
+  link_short <- runX $ parsed //> hasAttrValue "class" (== "title") >>> getChildren >>> hasName "a" >>> getAttrValue "href"
+  --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  -- TODO: nur erste sendung jedes "bc-item" nehmen
+  let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
+  let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
+  let link = map (\str -> "https://www.tele.at" ++ str) link_short
+  let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
+  return zipped
 
 
 readActors :: IO [String] --reads actors from txt file and returns them as a list of strings, creates file if necessary
@@ -81,6 +99,7 @@ addActor name = do
   else
     writeFile "actors.txt" $ unlines cleanActorList
 
+
 --TODO: check why 'avoid lambda'? DONE?!
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
@@ -90,23 +109,11 @@ removeActor name = do
   --let !newActorList = [map toLower x | x <- actorList, x/= map toLower name]
   writeFile "actors.txt" $ unlines newActorList
 
-listBroadcasts :: IO ()
-listBroadcasts = do
-  site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
-  let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
-  --sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> getAttrValue "title"
-  sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> removeAllWhiteSpace /> deep getText
-  zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
-  sendungen_ws <- runX $ parsed //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
-  genre_ws <- runX $ parsed //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
-  link_short <- runX $ parsed //> hasAttrValue "class" (== "title") >>> getChildren >>> hasName "a" >>> getAttrValue "href"
-  --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
-  -- TODO: nur erste sendung jedes "bc-item" nehmen
-  let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
-  let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
-  let link = map (\str -> "https://www.tele.at" ++ str) link_short
-  let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
+
+listBroadcasts :: IO [(Int,String,String,String,String,String)] -> IO ()
+listBroadcasts info = do
   let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  broadcasts <- info
+  putStrLn $ unlines $ map addTuple broadcasts
 
   --mapM_ putStrLn $ map addTuple zipped
-  putStrLn $ unlines $ map addTuple zipped
