@@ -32,14 +32,15 @@ mainMenu :: IO [(Int,String,String,String,String,String)] -> IO () --takes input
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
-  case map toLower $ unwords $ take 2 $ words input of
-    "list" -> listBroadcasts info >> mainMenu info
-    "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
-    "list actors" -> listActors >> mainMenu info
-    "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu info
-    "help" -> printHelp >> mainMenu info
-    "exit" -> putStrLn "Thanks for using TVRecommender!"
-    _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
+  if head (words input)=="show" then printHelp else
+    case map toLower $ unwords $ take 2 $ words input of
+      "list" -> listBroadcasts info >> mainMenu info
+      "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
+      "list actors" -> listActors >> mainMenu info
+      "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu info
+      "help" -> printHelp >> mainMenu info
+      "exit" -> putStrLn "Thanks for using TVRecommender!"
+      _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
 
 
 printHelp :: IO () --show list of all the possible commands
@@ -81,6 +82,14 @@ parseDetails (n,a,b,c,d,link) = do
   return detailBcs
 
 
+listBroadcasts :: IO [(Int,String,String,String,String,String)] -> IO ()
+listBroadcasts info = do
+  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  broadcasts <- info
+  putStrLn $ unlines $ map addTuple broadcasts
+  --mapM_ putStrLn $ map addTuple zipped
+
+
 readActors :: IO [String] --reads actors from txt file and returns them as a list of strings, creates file if necessary
 readActors = do
   fileExists <- doesFileExist "actors.txt"
@@ -119,12 +128,3 @@ removeActor name = do
   let !newActorList = filter (/=map toLower name) $ map (map toLower) actorList --BangPatterns needed because lazy evaluation produces an IO error here
   --let !newActorList = [map toLower x | x <- actorList, x/= map toLower name]
   writeFile "actors.txt" $ unlines newActorList
-
-
-listBroadcasts :: IO [(Int,String,String,String,String,String)] -> IO ()
-listBroadcasts info = do
-  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
-  broadcasts <- info
-  putStrLn $ unlines $ map addTuple broadcasts
-
-  --mapM_ putStrLn $ map addTuple zipped
