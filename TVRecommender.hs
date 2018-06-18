@@ -22,7 +22,7 @@ main = do
   setLocaleEncoding GHC.IO.Encoding.utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
-  let info = parseSite
+  let !info = parseSite
   putStrLn "Got Content!"
   printHelp
   mainMenu info
