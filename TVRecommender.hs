@@ -28,7 +28,7 @@ main = do
   mainMenu info
 
 
-mainMenu :: IO [(Int,String,String,String,String,String)] -> IO () --takes input and calls relevant function(s)
+mainMenu :: IO [(Int,(String,String,String,String,String))] -> IO () --takes input and calls relevant function(s)
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
@@ -53,7 +53,7 @@ printHelp = do
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
-parseSite :: IO [(Int,String,String,String,String,String)]
+parseSite :: IO [(Int,(String,String,String,String,String))]
 parseSite = do
   site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
   let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
@@ -67,13 +67,18 @@ parseSite = do
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
   let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
   let link = map (\str -> "https://www.tele.at" ++ str) link_short
-  let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
-  let test = map parseDetails zipped -- TODO: Liste von tuples mit allen relevanten informationen
-  return zipped
+  let zipped = zip5 zeiten sender sendungen genre link
+  --let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
+  let sorted = sortOn (\(_,s,_,_,_) -> map toLower s) zipped
+  let numbered = unFoldTuple $ zip [1..length sendungen + 1] sorted
+  let test = map parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
+  return numbered
+
+unFoldTuple (n,(a,b,c,d,e)) = (n,a,b,c,d,e)
 
 
-parseDetails :: (Int,String,String,String,String,String) -> IO (Int,String,String,String,String,String,[String])
-parseDetails (n,a,b,c,d,link) = do
+parseDetails :: (Int,(String,String,String,String,String)) -> IO (Int,String,String,String,String,String,[String])
+parseDetails (n,(a,b,c,d,link)) = do
   detailSite <- simpleHttp link
   let detailsParsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSite
   text <- runX $ detailsParsed //> hasAttrValue "class" (== "long-text") >>> deep getText
@@ -82,9 +87,9 @@ parseDetails (n,a,b,c,d,link) = do
   return detailBcs
 
 
-listBroadcasts :: IO [(Int,String,String,String,String,String)] -> IO ()
+listBroadcasts :: IO [(Int,(String,String,String,String,String))] -> IO ()
 listBroadcasts info = do
-  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  let addTuple (n,(t_zeiten,t_sender,t_sendungen,t_genre,_)) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
   broadcasts <- info
   putStrLn $ unlines $ map addTuple broadcasts
   --mapM_ putStrLn $ map addTuple zipped
