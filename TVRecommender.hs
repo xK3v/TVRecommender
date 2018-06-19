@@ -69,11 +69,11 @@ parseSite = do
   let link = map (\str -> "https://www.tele.at" ++ str) link_short
   let zipped = zip5 zeiten sender sendungen genre link
   --let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
-  let sorted = sortOn (\(_,s,_,_,_) -> map toLower s) zipped
+  let sorted = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   --let numbered = zipWith (curry unFoldTuple) [1..length sendungen + 1] sorted
   let numbered = zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  let test = map parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
+  test <- sequence $ map parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
   return numbered
 {-
 unFoldTuple :: (t,(t1,t2,t3,t4,t5)) -> (t,t1,t2,t3,t4,t5)
