@@ -88,16 +88,15 @@ parseDetails (n,a,b,c,d,link) = do
   let detailsParsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSite
   text <- runX $ detailsParsed //> hasAttrValue "class" (== "long-text") >>> deep getText
   actors <- runX $ detailsParsed //> hasAttrValue "class" (== "actor") >>> getChildren >>> hasName "span" >>> deep getText
-  let detailBcs = (n,a,b,c,d,head text,actors)
+  --let detailBcs = (n,a,b,c,d,head text,actors)
+  let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,actors)
   return detailBcs
 
 
 listBroadcasts :: IO [(Int,String,String,String,String,String,[String])] -> IO ()
 listBroadcasts info = do
   let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
-  --let testadder (n,t_zeiten,t_sender,t_sendungen,t_genre,a,b) = a
   broadcasts <- info
-  --mapM_ putStrLn $ map testadder broadcasts
   putStrLn $ unlines $ map addTuple broadcasts
   --mapM_ putStrLn $ map addTuple zipped
 
