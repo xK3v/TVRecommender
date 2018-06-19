@@ -45,8 +45,9 @@ mainMenu info = do
 
 printHelp :: IO () --show list of all the possible commands
 printHelp = do
-  putStrLn "\nThis Program supports the following commands:"
+  putStrLn "\nThis program supports the following commands:"
   putStrLn "\t 'list' ... shows an overview of all broadcasts"
+  putStrLn "\t 'show' n ... shows the details of the n-th entry in the program list"
   putStrLn "\t 'add actor' name ... add a given name to your list of favourite actors"
   putStrLn "\t 'list actors' ... shows a list of all your favourite actors"
   putStrLn "\t 'delete actor' name ... removes the given name from your list of favourite actors"
