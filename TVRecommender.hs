@@ -9,6 +9,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Text.Printf (printf)
 import System.Directory
 import qualified Data.Vector as V
+import Data.Vector ((!))
 
 --import Control.Monad
 --import Control.Monad.IO.Class
@@ -26,13 +27,13 @@ main = do
   setLocaleEncoding GHC.IO.Encoding.utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
-  let !info = parseSite --Downloads the information about all the broadcasts
+  let info = parseSite --Downloads the information about all the broadcasts
   putStrLn "Got Content!"
   printHelp
   mainMenu info
 
 
-mainMenu :: IO [(Int,String,String,String,String,String,[String])] -> IO () --takes input and calls relevant function(s)
+mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> IO () --takes input and calls relevant function(s)
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
@@ -58,7 +59,7 @@ printHelp = do
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
-parseSite :: IO [(Int,String,String,String,String,String,[String])]
+parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
   siteString           <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
@@ -85,7 +86,7 @@ parseSite = do
   --adding numbering
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   let numbered  = zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  mapM parseDetails numbered --Map der parseDetails function und Return der IO [IO ()]
+  V.mapM parseDetails $ V.fromList numbered --Map der parseDetails function und Return der IO [IO ()]
 
 
 {-
@@ -109,22 +110,22 @@ parseDetails (n,a,b,c,d,link) = do
   return detailBcs
 
 
-listBroadcasts :: IO [(Int,String,String,String,String,String,[String])] -> IO () --prints overview of todays program
+listBroadcasts :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> IO () --prints overview of todays program
 listBroadcasts info = do
   broadcasts <- info
 
   --adding tuples to one continuous string
   let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
   --printing list command
-  putStrLn $ unlines $ map addTuple broadcasts
+  putStrLn $ unlines $ map addTuple $ V.toList broadcasts
   --mapM_ putStrLn $ map addTuple zipped
 
 
-showBroadcast :: Int -> IO [(Int,String,String,String,String,String,[String])] -> IO () --prints detailed information of a specific broadcast
+showBroadcast :: Int -> IO (V.Vector(Int,String,String,String,String,String,[String])) -> IO () --prints detailed information of a specific broadcast
 showBroadcast n info = do
   bclist <- info
 
-  let bcinfo = bclist !! (n-1)
+  let bcinfo = bclist ! (n-1)
   let addDetails (_,t_zeit,t_sender,t_sendung,t_genre,t_text,t_actors) = "\nTitle: " ++ t_sendung ++ " (" ++ t_genre ++ ") \n" ++ t_zeit ++ " " ++ t_sender ++ "\n\n" ++ t_text ++ "\n\nActors:\n" ++ unlines t_actors
   putStrLn $ addDetails bcinfo
 
