@@ -43,14 +43,6 @@ mainMenu info = do
       _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
 
 
-showBroadcast :: Int -> IO [(Int,String,String,String,String,String,[String])] -> IO ()
-showBroadcast n info = do
-  bclist <- info
-  let bcinfo = bclist !! (n-1)
-  let addDetails (_,t_zeit,t_sender,t_sendung,t_genre,t_text,t_actors) = "Title: " ++ t_sendung ++ " (" ++ t_genre ++ ") \n" ++ t_zeit ++ " " ++ t_sender ++ "\n\n" ++ t_text ++ "\n\nActors:\n" ++ unlines t_actors
-  putStrLn $ addDetails bcinfo
-
-
 printHelp :: IO () --show list of all the possible commands
 printHelp = do
   putStrLn "\nThis Program supports the following commands:"
@@ -107,6 +99,14 @@ listBroadcasts info = do
   broadcasts <- info
   putStrLn $ unlines $ map addTuple broadcasts
   --mapM_ putStrLn $ map addTuple zipped
+
+
+showBroadcast :: Int -> IO [(Int,String,String,String,String,String,[String])] -> IO ()
+showBroadcast n info = do
+  bclist <- info
+  let bcinfo = bclist !! (n-1)
+  let addDetails (_,t_zeit,t_sender,t_sendung,t_genre,t_text,t_actors) = "\nTitle: " ++ t_sendung ++ " (" ++ t_genre ++ ") \n" ++ t_zeit ++ " " ++ t_sender ++ "\n\n" ++ t_text ++ "\n\nActors:\n" ++ unlines t_actors
+  putStrLn $ addDetails bcinfo
 
 
 readActors :: IO [String] --reads actors from txt file and returns them as a list of strings, creates file if necessary
