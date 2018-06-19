@@ -32,7 +32,7 @@ mainMenu :: IO [(Int,String,String,String,String,String,[String])] -> IO () --ta
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
-  if head (words input)=="show" then printHelp else
+  if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info else
     case map toLower $ unwords $ take 2 $ words input of
       "list" -> listBroadcasts info >> mainMenu info
       "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
@@ -41,6 +41,15 @@ mainMenu info = do
       "help" -> printHelp >> mainMenu info
       "exit" -> putStrLn "Thanks for using TVRecommender!"
       _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
+
+
+showBroadcast :: Int -> IO [(Int,String,String,String,String,String,[String])] -> IO ()
+showBroadcast n info = do
+  bclist <- info
+  let bcinfo = bclist !! (n-1)
+  let addDetails (_,t_zeit,t_sender,t_sendung,t_genre,t_text,t_actors) = "Title: " ++ t_sendung ++ " (" ++ t_genre ++ ") \n" ++ t_zeit ++ " " ++ t_sender ++ "\n\n" ++ t_text ++ "\n\nActors:\n" ++ unlines t_actors
+  putStrLn $ addDetails bcinfo
+  putStrLn ""
 
 
 printHelp :: IO () --show list of all the possible commands
