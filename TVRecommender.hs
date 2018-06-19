@@ -28,7 +28,7 @@ main = do
   mainMenu info
 
 
-mainMenu :: IO [(Int,String,String,String,String,String)] -> IO () --takes input and calls relevant function(s)
+mainMenu :: IO [(Int,String,String,String,String,String,[String])] -> IO () --takes input and calls relevant function(s)
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
@@ -53,9 +53,9 @@ printHelp = do
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
-parseSite :: IO [(Int,String,String,String,String,String)]
+parseSite :: IO [(Int,String,String,String,String,String,[String])]
 parseSite = do
-  site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
+  site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
   let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
   sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> removeAllWhiteSpace /> deep getText
   zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
@@ -73,8 +73,10 @@ parseSite = do
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   --let numbered = zipWith (curry unFoldTuple) [1..length sendungen + 1] sorted
   let numbered = zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  test <- sequence $ map parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
-  return numbered
+  --test <- sequence $ map parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
+  --test <- mapM parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
+  mapM parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
+  --return test
 {-
 unFoldTuple :: (t,(t1,t2,t3,t4,t5)) -> (t,t1,t2,t3,t4,t5)
 unFoldTuple (n,(a,b,c,d,e)) = (n,a,b,c,d,e)
@@ -90,10 +92,12 @@ parseDetails (n,a,b,c,d,link) = do
   return detailBcs
 
 
-listBroadcasts :: IO [(Int,String,String,String,String,String)] -> IO ()
+listBroadcasts :: IO [(Int,String,String,String,String,String,[String])] -> IO ()
 listBroadcasts info = do
-  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
+  --let testadder (n,t_zeiten,t_sender,t_sendungen,t_genre,a,b) = a
   broadcasts <- info
+  --mapM_ putStrLn $ map testadder broadcasts
   putStrLn $ unlines $ map addTuple broadcasts
   --mapM_ putStrLn $ map addTuple zipped
 
