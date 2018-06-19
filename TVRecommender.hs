@@ -16,6 +16,8 @@ import Network.HTTP.Conduit
 import Text.XML.HXT.Core
 --import Text.HandsomeSoup
 --import Text.HTML.TagSoup
+--import Control.Parallel.Strategies
+
 
 main :: IO () --Einstiegspunkt
 main = do
@@ -74,9 +76,7 @@ parseSite = do
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   --let numbered = zipWith (curry unFoldTuple) [1..length sendungen + 1] sorted
   let numbered = zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  --test <- sequence $ map parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
-  --test <- mapM parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
-  mapM parseDetails numbered -- TODO: Liste von tuples mit allen relevanten informationen
+  mapM parseDetails numbered
   --return test
 {-
 unFoldTuple :: (t,(t1,t2,t3,t4,t5)) -> (t,t1,t2,t3,t4,t5)
