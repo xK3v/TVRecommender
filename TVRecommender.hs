@@ -36,13 +36,13 @@ mainMenu info = do
   input <- getLine
   if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else
     case map toLower $ unwords $ take 2 $ words input of
-      "list" -> listBroadcasts info >> mainMenu info
-      "add actor" -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
-      "list actors" -> listActors >> mainMenu info
+      "list"         -> listBroadcasts info >> mainMenu info
+      "add actor"    -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
+      "list actors"  -> listActors >> mainMenu info
       "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu info
-      "help" -> printHelp >> mainMenu info
-      "exit" -> putStrLn "Thanks for using TVRecommender!"
-      _ -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
+      "help"         -> printHelp >> mainMenu info
+      "exit"         -> putStrLn "Thanks for using TVRecommender!"
+      _              -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
 
 
 printHelp :: IO () --show list of all the possible commands
@@ -58,37 +58,38 @@ printHelp = do
 
 parseSite :: IO [(Int,String,String,String,String,String,[String])]
 parseSite = do
-  site <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=5&format=raw"
-  let parsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
-  sender <- runX $ parsed //> hasAttrValue "class" (== "station") >>> removeAllWhiteSpace /> deep getText
-  zeiten <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") >>> getChildren //> hasName "strong" >>> deep getText
-  sendungen_ws <- runX $ parsed //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
-  genre_ws <- runX $ parsed //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
-  link_short <- runX $ parsed //> hasAttrValue "class" (== "title") >>> getChildren >>> hasName "a" >>> getAttrValue "href"
-  --sendungen <- runX $ parsed //> hasAttrValue "class" (=="bc-item") //> hasAttrValue "class" (=="title") >>> getChildren >>> removeAllWhiteSpace /> getText
+  site           <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
+  let parsed     = readString [withParseHTML yes, withWarnings no] $ L8.unpack site
+  sender         <- runX $ parsed //> hasAttrValue "class" (== "station") //> removeAllWhiteSpace //> deep getText
+  zeiten         <- runX $ parsed //> hasAttrValue "class" (isInfixOf "broadcast") //> hasName "strong" >>> deep getText
+  sendungen_ws   <- runX $ parsed //> hasAttrValue "class" (=="title") //> removeAllWhiteSpace //> getText
+  genre_ws       <- runX $ parsed //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
+  link_short     <- runX $ parsed //> hasAttrValue "class" (== "title") //> hasName "a" >>> getAttrValue "href"
   -- TODO: nur erste sendung jedes "bc-item" nehmen
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
-  let genre = map (filter (/= '\n') . filter (/= '\t')) genre_ws
-  let link = map (\str -> "https://www.tele.at" ++ str) link_short
-  let zipped = zip5 zeiten sender sendungen genre link
+  let genre     = map (filter (/= '\n') . filter (/= '\t')) genre_ws
+  let link      = map (\str -> "https://www.tele.at" ++ str) link_short
+  let zipped    = zip5 zeiten sender sendungen genre link
   --let zipped = zip6 [1..length sendungen + 1] zeiten sender sendungen genre link
-  let sorted = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
+  let sorted    = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   --let numbered = zipWith (curry unFoldTuple) [1..length sendungen + 1] sorted
   let numbered = zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
   mapM parseDetails numbered
-  --return test
+
+
 {-
 unFoldTuple :: (t,(t1,t2,t3,t4,t5)) -> (t,t1,t2,t3,t4,t5)
 unFoldTuple (n,(a,b,c,d,e)) = (n,a,b,c,d,e)
 -}
+
 
 parseDetails :: (Int,String,String,String,String,String) -> IO (Int,String,String,String,String,String,[String])
 parseDetails (n,a,b,c,d,link) = do
   detailSite <- simpleHttp link
   let detailsParsed = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSite
   text <- runX $ detailsParsed //> hasAttrValue "class" (== "long-text") >>> deep getText
-  actors <- runX $ detailsParsed //> hasAttrValue "class" (== "actor") >>> getChildren >>> hasName "span" >>> deep getText
+  actors <- runX $ detailsParsed //> hasAttrValue "class" (== "actor") //> hasName "span" >>> deep getText
   --let detailBcs = (n,a,b,c,d,head text,actors)
   let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,actors)
   return detailBcs
