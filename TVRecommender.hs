@@ -64,7 +64,7 @@ printHelp = do
 parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
-  siteString           <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
+  siteString   <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
   let site     = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
 
   --filtering the relevant information:
@@ -87,8 +87,8 @@ parseSite = do
 
   --adding numbering
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
-  let numbered  = zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  detailed <- PAR.mapM parseDetails numbered --Map der parseDetails function und Return der IO [IO ()]
+  let numbered  =  zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
+  detailed      <- PAR.mapM parseDetails numbered --Map der parseDetails function
   return $ V.fromList detailed
 
 
