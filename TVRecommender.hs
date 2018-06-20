@@ -10,6 +10,7 @@ import Text.Printf (printf)
 import System.Directory
 import qualified Data.Vector as V
 import Data.Vector ((!))
+import qualified Data.Set as Set
 
 --import Control.Monad
 --import Control.Monad.IO.Class
@@ -133,41 +134,37 @@ showBroadcast n info = do
   putStrLn $ addDetails bcinfo
 
 
-readActors :: IO [String] --reads actors from txt file and returns them as a list of strings, creates file if necessary
+readActors :: IO (Set.Set String) --reads actors from txt file and returns them as a set of strings, creates file if necessary
 readActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
     actors <- readFile "actors.txt"
-    --return $ sort $ filter (/="") $ lines actors --sort list of actors, in case actors have been inserted manually
-    return $ sortBy (\l r -> map toLower l `compare` map toLower r) $ filter (/="") $ lines actors --sort list of actors, in case actors have been inserted manually
+    return $ Set.fromList $ lines actors
   else
-    writeFile "actors.txt" "" >> return []
+    writeFile "actors.txt" "" >> return Set.empty
 
 
 listActors :: IO () --shows list of all actors in txt file
 listActors = do
   putStrLn ""
   actorList <- readActors
-  putStrLn $ unlines actorList
+  putStrLn $ unlines $ Set.toAscList actorList
 
 
 --TODO: check for any upper/lowercase variants before adding new actor
 addActor :: String -> IO () --adds a new actor to txt file
 addActor name = do
   actorList <- readActors
-  let cleanActorList = filter (/="") actorList --remove empty lines
-  if name `notElem` cleanActorList then do
-    let newActorList = insert name cleanActorList  --insert actor
-    writeFile "actors.txt" $ unlines newActorList
-  else
-    writeFile "actors.txt" $ unlines cleanActorList
+  --BangPatterns needed because lazy evaluation produces an IO error here
+  let !cleanActorList = Set.filter (/="") actorList --remove empty lines
+  let newActorList = Set.insert name cleanActorList --insert actor
+  writeFile "actors.txt" $ unlines $ Set.toAscList newActorList
 
 
---TODO: check why 'avoid lambda'? DONE?!
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   actorList <- readActors
-  --let !newActorList = filter (/=map toLower name) $ map (\n -> map toLower n) actorList --BangPatterns needed because lazy evaluation produces an IO error here
-  let !newActorList = filter (/=map toLower name) $ map (map toLower) actorList --BangPatterns needed because lazy evaluation produces an IO error here
-  --let !newActorList = [map toLower x | x <- actorList, x/= map toLower name]
-  writeFile "actors.txt" $ unlines newActorList
+  --BangPatterns needed because lazy evaluation produces an IO error here
+  --let !newActorList = Set.filter (/=map toLower name) $ Set.map (map toLower) actorList
+  let !newActorList = Set.foldl (\acc a -> if map toLower name == map toLower a then acc else Set.insert a acc) Set.empty actorList
+  writeFile "actors.txt" $ unlines $ Set.toAscList newActorList
