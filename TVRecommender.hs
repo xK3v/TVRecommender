@@ -20,6 +20,8 @@ import Text.XML.HXT.Core
 --import Text.HandsomeSoup
 --import Text.HTML.TagSoup
 --import Control.Parallel.Strategies
+import qualified Control.Monad.Parallel as PAR
+
 
 
 main :: IO () --Einstiegspunkt
@@ -86,7 +88,8 @@ parseSite = do
   --adding numbering
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   let numbered  = zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  V.mapM parseDetails $ V.fromList numbered --Map der parseDetails function und Return der IO [IO ()]
+  detailed <- PAR.mapM parseDetails numbered --Map der parseDetails function und Return der IO [IO ()]
+  return $ V.fromList detailed
 
 
 {-
