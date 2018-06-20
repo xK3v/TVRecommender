@@ -70,7 +70,7 @@ parseSite = do
   --filtering the relevant information:
   sender         <- runX $ site //> hasAttrValue "class" (== "station") //> removeAllWhiteSpace //> deep getText
   zeiten         <- runX $ site //> hasAttrValue "class" (isInfixOf "broadcast") //> hasName "strong" >>> deep getText
-  sendungen_ws   <- runX $ site //> hasAttrValue "class" (=="title") //> removeAllWhiteSpace //> getText
+  sendungen_ws   <- runX $ site //> hasAttrValue "class" (=="title") //> removeAllWhiteSpace /> getText
   genre_ws       <- runX $ site //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
   link_short     <- runX $ site //> hasAttrValue "class" (== "title") //> hasName "a" >>> getAttrValue "href"
 
@@ -109,7 +109,7 @@ parseDetails (n,a,b,c,d,link) = do
   actors <- runX $ detailSite //> hasAttrValue "class" (== "actor") //> hasName "span" >>> deep getText
 
   --putting together new tuple and dealing with missing information
-  let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,if null actors then ["-"] else actors)
+  let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,if null actors then ["-"] else map (\s -> '\t':'-':s) actors)
   return detailBcs
 
 
