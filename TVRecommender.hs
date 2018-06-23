@@ -27,6 +27,7 @@ import qualified Control.Monad.Parallel as PAR
 
 main :: IO () --Einstiegspunkt
 main = do
+  --TODO: Umlaute
   setLocaleEncoding GHC.IO.Encoding.utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
@@ -40,13 +41,14 @@ mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> I
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
+  --TODO: Crash on empty input
   if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else
     case map toLower $ unwords $ take 2 $ words input of
       "list"         -> listBroadcasts info >> mainMenu info
       "add actor"    -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
       "list actors"  -> listActors >> mainMenu info
       "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu info
---      "recommend"    -> mapSearchActors info >> mainMenu info
+      "recommend"    -> recommend (fmap V.toList info) >> mainMenu info
       "help"         -> printHelp >> mainMenu info
       "exit"         -> putStrLn "Thanks for using TVRecommender!"
       _              -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
@@ -60,9 +62,11 @@ printHelp = do
   putStrLn "\t 'add actor' name ... add a given name to your list of favourite actors"
   putStrLn "\t 'list actors' ... shows a list of all your favourite actors"
   putStrLn "\t 'delete actor' name ... removes the given name from your list of favourite actors"
+  putStrLn "\t 'recommend' ... shows a list of broadcasts featuring your favourite actors"
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
+--TODO: nur Primetime
 parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
@@ -111,7 +115,8 @@ parseDetails (n,a,b,c,d,link) = do
   actors <- runX $ detailSite //> hasAttrValue "class" (== "actor") //> hasName "span" >>> deep getText
 
   --putting together new tuple and dealing with missing information
-  let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,if null actors then ["-"] else map (\s -> '\t':'-':s) actors)
+  --let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,if null actors then ["-"] else map (\s -> '\t':'-':s) actors)
+  let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,if null actors then ["-"] else actors)
   return detailBcs
 
 
@@ -170,19 +175,12 @@ removeActor name = do
   let !newActorList = Set.foldl (\acc a -> if map toLower name == map toLower a then acc else Set.insert a acc) Set.empty actorList
   writeFile "actors.txt" $ unlines $ Set.toAscList newActorList
 
-{-
---mapSearchActors :: Foldable t => [V.Vector (IO (t6, t5, t4, t3, t2, t1, t String))] -> [IO Bool]
-mapSearchActors bcvIO = do
-  bcv <- bcvIO
-  let bcl = V.toList bcv
-  test <- map searchActors bcl
-  return test
-
-
---searchActors :: Foldable t => IO (t6, t5, t4, t3, t2, t1, t String) -> IO Bool
-searchActors bcio = do
-  (_,_,_,_,_,_,bcActors) <- bcio
-  favActors <- readActors
-  let featFavActor = foldr (\a acc -> if a  `elem` favActors then True else acc) False bcActors
-  return featFavActor
--}
+recommend :: IO [(Int, String, String, String, String, String, [String])] -> IO ()
+recommend bclIO = do
+  bcl <- bclIO
+  favActorsSet <- readActors
+  let favActors = Set.toList favActorsSet
+  --let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> if a `elem` favActors then True else acc) False bcActors ) bcl
+  let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> (a `elem` favActors) || acc) False bcActors ) bcl
+  let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (`elem` favActors) t_actors) ++ "), " ++ t_genre
+  putStrLn $ unlines $ map addRecommendation recommendations
