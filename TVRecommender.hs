@@ -41,17 +41,17 @@ mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> I
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
-  --TODO: Crash on empty input
-  if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else
-    case map toLower $ unwords $ take 2 $ words input of
-      "list"         -> listBroadcasts info >> mainMenu info
-      "add actor"    -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
-      "list actors"  -> listActors >> mainMenu info
-      "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu info
-      "recommend"    -> recommend (fmap V.toList info) >> mainMenu info
-      "help"         -> printHelp >> mainMenu info
-      "exit"         -> putStrLn "Thanks for using TVRecommender!"
-      _              -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
+  if null input then mainMenu info else
+    if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else
+      case map toLower $ unwords $ take 2 $ words input of
+        "list"         -> listBroadcasts info >> mainMenu info
+        "add actor"    -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
+        "list actors"  -> listActors >> mainMenu info
+        "delete actor" -> removeActor (unwords $ drop 2 $ words input) >> mainMenu info
+        "recommend"    -> recommend (fmap V.toList info) >> mainMenu info
+        "help"         -> printHelp >> mainMenu info
+        "exit"         -> putStrLn "Thanks for using TVRecommender!"
+        _              -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
 
 
 printHelp :: IO () --show list of all the possible commands
