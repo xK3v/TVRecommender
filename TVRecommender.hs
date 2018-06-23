@@ -16,12 +16,11 @@ import qualified Data.Set as Set
 --import Control.Monad.IO.Class
 
 --These have to be installed first:
-import Network.HTTP.Conduit
-import Text.XML.HXT.Core
+import Network.HTTP.Conduit --install http-conduit
+import Text.XML.HXT.Core --install hxt1
 --import Text.HandsomeSoup
---import Text.HTML.TagSoup
 --import Control.Parallel.Strategies
-import qualified Control.Monad.Parallel as PAR
+import qualified Control.Monad.Parallel as PAR --install monad-parallel
 
 --import Codec.Binary.UTF8.String
 --import qualified Data.ByteString.Lazy as LBS
@@ -43,8 +42,8 @@ mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> I
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
-  if null input then mainMenu info else
-    if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else
+  if null input then mainMenu info else --check for empty input
+    if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else --check if input is show
       case map toLower $ unwords $ take 2 $ words input of
         "list"         -> listBroadcasts info >> mainMenu info
         "add actor"    -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
@@ -91,13 +90,13 @@ parseSite = do
   let genre     = map (filter (/= '\n') . filter (/= '\t')) genre_ws
   let link      = map (\str -> "https://www.tele.at" ++ str) link_short
 
-  --creating tuple with basic information
+  --creating tuple with basic information:
   let zipped    = zip5 zeiten sender sendungen genre link
 
-  --sorting by station name
+  --sorting by station name:
   let sorted    = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
 
-  --adding numbering
+  --adding numbering:
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   let numbered  =  zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
   detailed      <- PAR.mapM parseDetails numbered --Map der parseDetails function parallel (50% faster)
@@ -112,15 +111,15 @@ unFoldTuple (n,(a,b,c,d,e)) = (n,a,b,c,d,e)
 
 parseDetails :: (Int,String,String,String,String,String) -> IO (Int,String,String,String,String,String,[String]) --adding text and actors
 parseDetails (n,a,b,c,d,link) = do
-  --downloading detailed website
+  --downloading detailed website:
   detailSiteString <- simpleHttp link
   let detailSite = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSiteString
 
-  --getting relevant information (text and actors)
+  --getting relevant information (text and actors):
   text   <- runX $ detailSite //> hasAttrValue "class" (== "long-text") >>> deep getText
   actors <- runX $ detailSite //> hasAttrValue "class" (== "actor") //> hasName "span" >>> deep getText
 
-  --putting together new tuple and dealing with missing information
+  --putting together new tuple and dealing with missing information:
   --let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,if null actors then ["-"] else map (\s -> '\t':'-':s) actors)
   let detailBcs = (n,a,b,c,d,if null text then "No information available" else head text,if null actors then ["-"] else actors)
   return detailBcs
@@ -130,9 +129,10 @@ listBroadcasts :: IO (V.Vector (Int,String,String,String,String,String,[String])
 listBroadcasts info = do
   broadcasts <- info
 
-  --adding tuples to one continuous string
+  --adding tuples to one continuous string:
   let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
-  --printing list command
+
+  --printing list command:
   putStrLn $ unlines $ map addTuple $ V.toList broadcasts
   --mapM_ putStrLn $ map addTuple zipped
 
@@ -141,8 +141,13 @@ showBroadcast :: Int -> IO (V.Vector(Int,String,String,String,String,String,[Str
 showBroadcast n info = do
   bclist <- info
 
+  --selecting requested broadcast:
   let bcinfo = bclist ! (n-1)
+
+  --adding tuple to one continuous string:
   let addDetails (_,t_zeit,t_sender,t_sendung,t_genre,t_text,t_actors) = "\nTitle: " ++ t_sendung ++ " (" ++ t_genre ++ ") \n" ++ t_zeit ++ " " ++ t_sender ++ "\n\n" ++ t_text ++ "\n\nActors:\n" ++ unlines (map (\s -> '\t':'-':s) t_actors)
+
+  --printing show command:
   putStrLn $ addDetails bcinfo
 
 
@@ -151,8 +156,10 @@ readActors = do
   fileExists <- doesFileExist "actors.txt"
   if fileExists then do
     actors <- readFile "actors.txt"
+    --save actors in a Set:
     return $ Set.fromList $ lines actors
   else
+    --create file and return empty Set:
     writeFile "actors.txt" "" >> return Set.empty
 
 
@@ -177,17 +184,23 @@ removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   actorList <- readActors
   --BangPatterns needed because lazy evaluation produces an IO error here
+  --add all actors except the one being deleted to a new Set:
   --let !newActorList = Set.filter (/=map toLower name) $ Set.map (map toLower) actorList
   let !newActorList = Set.foldl (\acc a -> if map toLower name == map toLower a then acc else Set.insert a acc) Set.empty actorList
   writeFile "actors.txt" $ unlines $ Set.toAscList newActorList
 
 recommend :: IO [(Int, String, String, String, String, String, [String])] -> IO ()
 recommend bclIO = do
+  --loading favourite actors and list of broadcasts:
   bcl <- bclIO
   favActorsSet <- readActors
+  --making favourite actors lowercase so comparision will be case insensitive:
   let favActors = map (map toLower) (Set.toList favActorsSet)
   --let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> if a `elem` favActors then True else acc) False bcActors ) bcl
+  --filter those broadcasts that contain at least one of the favourite actors:
   let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> (map toLower a `elem` favActors) || acc) False bcActors ) bcl
+  --adding tuple to one continuous string and selecting which actors to show:
   let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (\a -> map toLower a `elem` favActors) t_actors) ++ "), " ++ t_genre
+  --deal with no recommendations:
   if null recommendations then putStrLn "There are no recommendations for you today." else
     putStrLn $ unlines $ map addRecommendation recommendations
