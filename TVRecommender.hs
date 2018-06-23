@@ -183,4 +183,5 @@ recommend bclIO = do
   --let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> if a `elem` favActors then True else acc) False bcActors ) bcl
   let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> (a `elem` favActors) || acc) False bcActors ) bcl
   let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (`elem` favActors) t_actors) ++ "), " ++ t_genre
-  putStrLn $ unlines $ map addRecommendation recommendations
+  if null recommendations then putStrLn "There are no recommendations for you today." else
+    putStrLn $ unlines $ map addRecommendation recommendations
