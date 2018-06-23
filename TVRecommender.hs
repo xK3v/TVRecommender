@@ -185,9 +185,9 @@ recommend :: IO [(Int, String, String, String, String, String, [String])] -> IO 
 recommend bclIO = do
   bcl <- bclIO
   favActorsSet <- readActors
-  let favActors = Set.toList favActorsSet
+  let favActors = map (map toLower) (Set.toList favActorsSet)
   --let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> if a `elem` favActors then True else acc) False bcActors ) bcl
-  let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> (a `elem` favActors) || acc) False bcActors ) bcl
-  let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (`elem` favActors) t_actors) ++ "), " ++ t_genre
+  let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> (map toLower a `elem` favActors) || acc) False bcActors ) bcl
+  let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (\a -> map toLower a `elem` favActors) t_actors) ++ "), " ++ t_genre
   if null recommendations then putStrLn "There are no recommendations for you today." else
     putStrLn $ unlines $ map addRecommendation recommendations
