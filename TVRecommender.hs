@@ -23,6 +23,8 @@ import Text.XML.HXT.Core
 --import Control.Parallel.Strategies
 import qualified Control.Monad.Parallel as PAR
 
+--import Codec.Binary.UTF8.String
+--import qualified Data.ByteString.Lazy as LBS
 
 
 main :: IO () --Einstiegspunkt
@@ -31,7 +33,7 @@ main = do
   setLocaleEncoding GHC.IO.Encoding.utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
-  let info = parseSite --Downloads the information about all the broadcasts
+  let !info = parseSite --Downloads the information about all the broadcasts
   --putStrLn "Got Content!"
   printHelp
   mainMenu info
@@ -71,7 +73,11 @@ parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
   siteString   <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
-  let site     = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
+  --let st1 = LBS.unpack siteString
+  --let st2 = decode st1
+  --let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
+  let site = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
+  --let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
 
   --filtering the relevant information:
   sender         <- runX $ site //> hasAttrValue "class" (== "station") //> removeAllWhiteSpace //> deep getText
@@ -94,7 +100,7 @@ parseSite = do
   --adding numbering
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   let numbered  =  zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  detailed      <- PAR.mapM parseDetails numbered --Map der parseDetails function
+  detailed      <- PAR.mapM parseDetails numbered --Map der parseDetails function parallel (50% faster)
   return $ V.fromList detailed
 
 
