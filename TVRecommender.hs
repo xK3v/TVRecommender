@@ -136,7 +136,7 @@ showBroadcast n info = do
   bclist <- info
 
   let bcinfo = bclist ! (n-1)
-  let addDetails (_,t_zeit,t_sender,t_sendung,t_genre,t_text,t_actors) = "\nTitle: " ++ t_sendung ++ " (" ++ t_genre ++ ") \n" ++ t_zeit ++ " " ++ t_sender ++ "\n\n" ++ t_text ++ "\n\nActors:\n" ++ unlines t_actors
+  let addDetails (_,t_zeit,t_sender,t_sendung,t_genre,t_text,t_actors) = "\nTitle: " ++ t_sendung ++ " (" ++ t_genre ++ ") \n" ++ t_zeit ++ " " ++ t_sender ++ "\n\n" ++ t_text ++ "\n\nActors:\n" ++ unlines (map (\s -> '\t':'-':s) t_actors)
   putStrLn $ addDetails bcinfo
 
 
