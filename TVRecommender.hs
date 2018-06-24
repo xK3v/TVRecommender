@@ -16,7 +16,8 @@ import           System.IO
 
 --These have to be installed first:
 import           Network.HTTP.Conduit --install http-conduit
--- I discussed alternatives to TagSoup with Nikolaus Köstinger:
+
+-- I discussed alternatives for TagSoup with Nikolaus Köstinger:
 import           Text.XML.HXT.Core --install hxt
 --import Text.HandsomeSoup
 --import Control.Parallel.Strategies
@@ -32,8 +33,8 @@ main = do
   --TODO: Umlaute
   --setForeignEncoding GHC.IO.Encoding.utf8
   --setLocaleEncoding GHC.IO.Encoding.utf8
-  hSetEncoding stdout System.IO.utf8
-  hSetEncoding stderr System.IO.utf8
+  --hSetEncoding stdout System.IO.utf8
+  --hSetEncoding stderr System.IO.utf8
 
   hSetTranslit stdout
   hSetTranslit stderr
@@ -89,7 +90,7 @@ printHelp = do
   putStrLn "\t 'exit' ... terminate the application"
 
 
--- I discussed the approach for only getting Primetime broadcasts with Nikolaus Köstinger. We came up with the solution to drop every other element.
+-- I discussed the approach for only getting Primetime broadcasts with Nikolaus Köstinger. We came up with the solution to just drop every other element.
 --two functions to get only every other element of a list:
 dropEveryOther :: [a] -> [a] -> [a]
 dropEveryOther acc [] = acc
