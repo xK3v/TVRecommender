@@ -43,7 +43,7 @@ mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> I
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
-  if null input then mainMenu info else --check for empty input
+  if null input then mainMenu info else --check if input is empty
     if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else --check if input is show
       case map toLower $ unwords $ take 2 $ words input of
         "list"         -> listBroadcasts info >> mainMenu info
@@ -68,7 +68,9 @@ printHelp = do
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
---two functions to get only every other element of a list
+
+
+--two functions to get only every other element of a list:
 dropEveryOther :: [a] -> [a] -> [a]
 dropEveryOther acc [] = acc
 dropEveryOther acc (h:t) = dropEveryOther' (h : acc) t
