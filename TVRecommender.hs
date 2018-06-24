@@ -2,35 +2,40 @@
 
 {-# LANGUAGE BangPatterns #-}
 
-import GHC.IO.Encoding
-import Data.List
-import Data.Char
+import           GHC.IO.Encoding
+import           Data.List
+import           Data.Char
 import qualified Data.ByteString.Lazy.Char8 as L8
-import Text.Printf (printf)
-import System.Directory
-import qualified Data.Vector as V
-import Data.Vector ((!))
-import qualified Data.Set as Set
+import           Text.Printf                (printf)
+import           System.Directory
+import qualified Data.Vector                as V
+import           Data.Vector                ((!))
+import qualified Data.Set                   as Set
+import           System.IO
 
---import Control.Monad
---import Control.Monad.IO.Class
 
 --These have to be installed first:
-import Network.HTTP.Conduit --install http-conduit
-import Text.XML.HXT.Core --install hxt
+import           Network.HTTP.Conduit --install http-conduit
+import           Text.XML.HXT.Core --install hxt
 --import Text.HandsomeSoup
 --import Control.Parallel.Strategies
-import qualified Control.Monad.Parallel as PAR --install monad-parallel
+import qualified Control.Monad.Parallel     as PAR --install monad-parallel
 --import Data.List.Utils
 
---import Codec.Binary.UTF8.String
---import qualified Data.ByteString.Lazy as LBS
+import           Codec.Binary.UTF8.String
+import qualified Data.ByteString.Lazy       as LBS
 
 
 main :: IO () --Einstiegspunkt
 main = do
   --TODO: Umlaute
-  setLocaleEncoding GHC.IO.Encoding.utf8
+  --setForeignEncoding GHC.IO.Encoding.utf8
+  --setLocaleEncoding GHC.IO.Encoding.utf8
+  hSetEncoding stdout System.IO.utf8
+  hSetEncoding stderr System.IO.utf8
+
+  hSetTranslit stdout
+  hSetTranslit stderr
   putStrLn ""
   putStrLn "Loading TVRecommender..."
 
@@ -38,6 +43,18 @@ main = do
   info <- parseSite
   printHelp
   mainMenu (return info)
+
+
+--taken from here: https://phabricator.haskell.org/D1167
+--FINALLY fixes some special characters and prevents crash
+hSetTranslit :: Handle -> IO ()
+hSetTranslit h = do
+    menc <- hGetEncoding h
+    case fmap textEncodingName menc of
+        Just name | '/' `notElem` name -> do
+            enc' <- mkTextEncoding $ name ++ "//TRANSLIT"
+            hSetEncoding h enc'
+        _ -> return ()
 
 
 mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> IO () --takes input and calls relevant function(s)
@@ -84,11 +101,9 @@ parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
   siteString   <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
-  --let st1 = LBS.unpack siteString
-  --let st2 = decode st1
-  --let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
-  let site = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
-  --let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
+
+  let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
+  --let site = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
 
   --filtering the relevant information:
   zeiten         <- runX $ site //> hasAttrValue "class" (isInfixOf "broadcast") //> hasName "strong" >>> deep getText
@@ -136,7 +151,9 @@ parseDetails :: (Int,String,String,String,String,String) -> IO (Int,String,Strin
 parseDetails (n,a,b,c,d,link) = do
   --downloading detailed website:
   detailSiteString <- simpleHttp link
-  let detailSite    = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSiteString
+  --let detailSite    = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSiteString
+  let detailSite      = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack detailSiteString
+
 
   --getting relevant information (text and actors):
   text   <- runX $ detailSite //> hasAttrValue "class" (== "long-text") >>> deep getText
