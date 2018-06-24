@@ -32,10 +32,11 @@ main = do
   setLocaleEncoding GHC.IO.Encoding.utf8
   putStrLn ""
   putStrLn "Loading TVRecommender..."
-  let !info = parseSite --Downloads the information about all the broadcasts
-  --putStrLn "Got Content!"
+
+  --downloads the information about all the broadcasts:
+  info <- parseSite
   printHelp
-  mainMenu info
+  mainMenu (return info)
 
 
 mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> IO () --takes input and calls relevant function(s)
@@ -115,6 +116,7 @@ parseSite = do
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   let numbered  =  zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
 
+  putStrLn "Got Content! Reading broadcast details..."
   --Map der parseDetails function parallel (50% faster)
   detailed      <- PAR.mapM parseDetails numbered
   return $ V.fromList detailed
