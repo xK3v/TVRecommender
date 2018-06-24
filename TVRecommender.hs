@@ -21,6 +21,7 @@ import Text.XML.HXT.Core --install hxt
 --import Text.HandsomeSoup
 --import Control.Parallel.Strategies
 import qualified Control.Monad.Parallel as PAR --install monad-parallel
+--import Data.List.Utils
 
 --import Codec.Binary.UTF8.String
 --import qualified Data.ByteString.Lazy as LBS
@@ -77,6 +78,7 @@ dropEveryOther acc (h:t) = dropEveryOther' (h : acc) t
 dropEveryOther' :: [a] -> [a] -> [a]
 dropEveryOther' acc [] = acc
 dropEveryOther' acc (_:t) = dropEveryOther acc t
+
 
 parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
@@ -225,5 +227,6 @@ recommend bclIO = do
   --adding tuple to one continuous string and selecting which actors to show:
   let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ printf "%- 16s" t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (\a -> map toLower a `elem` favActors) t_actors) ++ "), " ++ t_genre
   --deal with no recommendations:
+  putStrLn ""
   if null recommendations then putStrLn "There are no recommendations for you today." else
     putStrLn $ unlines $ map addRecommendation recommendations
