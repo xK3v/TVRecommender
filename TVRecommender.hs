@@ -67,7 +67,14 @@ printHelp = do
   putStrLn "\t 'help' ... shows this message"
   putStrLn "\t 'exit' ... terminate the application"
 
---TODO: nur Primetime
+--two functions to get only every other element of a list
+dropEveryOther :: [a] -> [a] -> [a]
+dropEveryOther acc [] = acc
+dropEveryOther acc (h:t) = dropEveryOther' (h : acc) t
+dropEveryOther' :: [a] -> [a] -> [a]
+dropEveryOther' acc [] = acc
+dropEveryOther' acc (_:t) = dropEveryOther acc t
+
 parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
@@ -79,8 +86,8 @@ parseSite = do
   --let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
 
   --filtering the relevant information:
-  sender         <- runX $ site //> hasAttrValue "class" (== "station") //> removeAllWhiteSpace //> deep getText
   zeiten         <- runX $ site //> hasAttrValue "class" (isInfixOf "broadcast") //> hasName "strong" >>> deep getText
+  sender         <- runX $ site //> hasAttrValue "class" (== "station") //> removeAllWhiteSpace //> deep getText
   sendungen_ws   <- runX $ site //> hasAttrValue "class" (=="title") //> removeAllWhiteSpace /> getText
   genre_ws       <- runX $ site //> hasAttrValue "class" (=="genre") >>> removeAllWhiteSpace >>> deep getText
   link_short     <- runX $ site //> hasAttrValue "class" (== "title") //> hasName "a" >>> getAttrValue "href"
@@ -88,10 +95,18 @@ parseSite = do
   --doing some work on the information:
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
   let genre     = map (filter (/= '\n') . filter (/= '\t')) genre_ws
-  let link      = map (\str -> "https://www.tele.at" ++ str) link_short
+
+  --selecting only PrimeTime broadcasts
+  let zeitenPT = dropEveryOther [] zeiten
+  let senderPT = dropEveryOther [] sender
+  let sendungenPT = dropEveryOther [] sendungen
+  let genrePT = dropEveryOther [] genre
+  let link_shortPT = dropEveryOther [] link_short
+
+  let linkPT      = map (\str -> "https://www.tele.at" ++ str) link_shortPT
 
   --creating tuple with basic information:
-  let zipped    = zip5 zeiten sender sendungen genre link
+  let zipped    = zip5 zeitenPT senderPT sendungenPT genrePT linkPT
 
   --sorting by station name:
   let sorted    = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
