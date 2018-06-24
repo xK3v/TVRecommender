@@ -17,7 +17,7 @@ import qualified Data.Set as Set
 
 --These have to be installed first:
 import Network.HTTP.Conduit --install http-conduit
-import Text.XML.HXT.Core --install hxt1
+import Text.XML.HXT.Core --install hxt
 --import Text.HandsomeSoup
 --import Control.Parallel.Strategies
 import qualified Control.Monad.Parallel as PAR --install monad-parallel
@@ -215,7 +215,7 @@ recommend bclIO = do
   --filter those broadcasts that contain at least one of the favourite actors:
   let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> (map toLower a `elem` favActors) || acc) False bcActors ) bcl
   --adding tuple to one continuous string and selecting which actors to show:
-  let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (\a -> map toLower a `elem` favActors) t_actors) ++ "), " ++ t_genre
+  let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ printf "%- 16s" t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (\a -> map toLower a `elem` favActors) t_actors) ++ "), " ++ t_genre
   --deal with no recommendations:
   if null recommendations then putStrLn "There are no recommendations for you today." else
     putStrLn $ unlines $ map addRecommendation recommendations
