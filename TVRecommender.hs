@@ -36,8 +36,8 @@ main = do
   --hSetEncoding stdout System.IO.utf8
   --hSetEncoding stderr System.IO.utf8
 
-  hSetTranslit stdout
-  hSetTranslit stderr
+  --hSetTranslit stdout
+  --hSetTranslit stderr
   putStrLn ""
   putStrLn "Loading TVRecommender..."
 
@@ -104,9 +104,9 @@ parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
   siteString   <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
-
-  let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
-  --let site = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
+  print siteString
+  --let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
+  let site = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
 
   --filtering the relevant information:
   zeiten         <- runX $ site //> hasAttrValue "class" (isInfixOf "broadcast") //> hasName "strong" >>> deep getText
@@ -225,7 +225,6 @@ addActor name = do
   writeFile "actors.txt" $ unlines $ Set.toAscList newActorList
 
 
---TODO: maybe use Set.difference
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   actorList <- readActors
