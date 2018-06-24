@@ -44,7 +44,7 @@ mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
   if null input then mainMenu info else --check if input is empty
-    if head (words input)=="show" then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else --check if input is show
+    if head (words input)=="show" && (2 == length (words input)) then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else --check if input is show
       case map toLower $ unwords $ take 2 $ words input of
         "list"         -> listBroadcasts info >> mainMenu info
         "add actor"    -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
@@ -188,7 +188,9 @@ listActors :: IO () --shows list of all actors in txt file
 listActors = do
   putStrLn ""
   actorList <- readActors
-  putStrLn $ unlines $ Set.toAscList actorList
+  if null actorList
+    then putStrLn "You do not have any favourite actors yet. Please use 'add actor' to add one."
+    else putStrLn $ unlines $ Set.toAscList actorList
 
 
 --TODO: check for any upper/lowercase variants before adding new actor
