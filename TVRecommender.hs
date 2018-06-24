@@ -16,6 +16,7 @@ import           System.IO
 
 --These have to be installed first:
 import           Network.HTTP.Conduit --install http-conduit
+-- I discussed alternatives to TagSoup with Nikolaus Köstinger:
 import           Text.XML.HXT.Core --install hxt
 --import Text.HandsomeSoup
 --import Control.Parallel.Strategies
@@ -57,6 +58,7 @@ hSetTranslit h = do
         _ -> return ()
 
 
+-- I discussed ideas on how to implement two-worded commands with Nikolaus Köstinger.
 mainMenu :: IO (V.Vector (Int,String,String,String,String,String,[String])) -> IO () --takes input and calls relevant function(s)
 mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
@@ -87,7 +89,7 @@ printHelp = do
   putStrLn "\t 'exit' ... terminate the application"
 
 
-
+-- I discussed the approach for only getting Primetime broadcasts with Nikolaus Köstinger. We came up with the solution to drop every other element.
 --two functions to get only every other element of a list:
 dropEveryOther :: [a] -> [a] -> [a]
 dropEveryOther acc [] = acc
