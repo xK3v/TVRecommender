@@ -224,6 +224,7 @@ addActor name = do
   writeFile "actors.txt" $ unlines $ Set.toAscList newActorList
 
 
+--TODO: maybe use Set.difference
 removeActor :: String -> IO () --removes an actor from txt file
 removeActor name = do
   actorList <- readActors
