@@ -1,5 +1,6 @@
 --Written by Kevin Kazianschütz
 
+--I discussed the usage of BangPatterns with Nikolaus Köstinger.
 {-# LANGUAGE BangPatterns #-}
 
 import           GHC.IO.Encoding
@@ -100,6 +101,7 @@ dropEveryOther' acc [] = acc
 dropEveryOther' acc (_:t) = dropEveryOther acc t
 
 
+--I came up with the idea to replace special chars later on by talking to Nikolaus Köstinger.
 parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
@@ -172,6 +174,7 @@ listBroadcasts :: IO (V.Vector (Int,String,String,String,String,String,[String])
 listBroadcasts info = do
   broadcasts <- info
 
+  --I discussed the usage of printf with Nikolaus Köstinger.
   --adding tuples to one continuous string:
   let addTuple (n,t_zeiten,t_sender,t_sendungen,t_genre,_,_) = printf "%03d." n ++ "\t" ++ t_zeiten ++ "\t" ++ printf "%- 16s" t_sender ++ "\t" ++ t_sendungen ++ ", " ++ t_genre
 
