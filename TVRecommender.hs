@@ -97,24 +97,26 @@ parseSite = do
   let genre     = map (filter (/= '\n') . filter (/= '\t')) genre_ws
 
   --selecting only PrimeTime broadcasts
-  let zeitenPT = dropEveryOther [] zeiten
-  let senderPT = dropEveryOther [] sender
-  let sendungenPT = dropEveryOther [] sendungen
-  let genrePT = dropEveryOther [] genre
+  let zeitenPT     = dropEveryOther [] zeiten
+  let senderPT     = dropEveryOther [] sender
+  let sendungenPT  = dropEveryOther [] sendungen
+  let genrePT      = dropEveryOther [] genre
   let link_shortPT = dropEveryOther [] link_short
 
-  let linkPT      = map (\str -> "https://www.tele.at" ++ str) link_shortPT
+  let linkPT = map (\str -> "https://www.tele.at" ++ str) link_shortPT
 
   --creating tuple with basic information:
-  let zipped    = zip5 zeitenPT senderPT sendungenPT genrePT linkPT
+  let zipped = zip5 zeitenPT senderPT sendungenPT genrePT linkPT
 
   --sorting by station name:
-  let sorted    = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
+  let sorted = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
 
   --adding numbering:
   --let numbered = map unFoldTuple $ zip [1..length sendungen + 1] sorted
   let numbered  =  zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
-  detailed      <- PAR.mapM parseDetails numbered --Map der parseDetails function parallel (50% faster)
+
+  --Map der parseDetails function parallel (50% faster)
+  detailed      <- PAR.mapM parseDetails numbered
   return $ V.fromList detailed
 
 
@@ -128,7 +130,7 @@ parseDetails :: (Int,String,String,String,String,String) -> IO (Int,String,Strin
 parseDetails (n,a,b,c,d,link) = do
   --downloading detailed website:
   detailSiteString <- simpleHttp link
-  let detailSite = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSiteString
+  let detailSite    = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSiteString
 
   --getting relevant information (text and actors):
   text   <- runX $ detailSite //> hasAttrValue "class" (== "long-text") >>> deep getText
