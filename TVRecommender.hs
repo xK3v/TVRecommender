@@ -14,31 +14,25 @@ import           Data.Vector                ((!))
 import qualified Data.Set                   as Set
 import           System.IO
 
-
 --These have to be installed first:
 import           Network.HTTP.Conduit --install http-conduit
-
 -- I discussed alternatives for TagSoup with Nikolaus Köstinger:
 import           Text.XML.HXT.Core --install hxt
---import Text.HandsomeSoup
---import Control.Parallel.Strategies
 import qualified Control.Monad.Parallel     as PAR --install monad-parallel
---import Data.List.Utils
-
-import           Codec.Binary.UTF8.String
-import qualified Data.ByteString.Lazy       as LBS
+import           Codec.Binary.UTF8.String --install utf8-string
+import qualified Data.ByteString.Lazy       as LBS --install bytestring
 
 
 main :: IO () --Einstiegspunkt
 main = do
-  --TODO: Umlaute
   --setForeignEncoding GHC.IO.Encoding.utf8
   --setLocaleEncoding GHC.IO.Encoding.utf8
   --hSetEncoding stdout System.IO.utf8
   --hSetEncoding stderr System.IO.utf8
 
-  --hSetTranslit stdout
-  --hSetTranslit stderr
+  --fixing special characters:
+  hSetTranslit stdout
+  hSetTranslit stderr
   putStrLn ""
   putStrLn "Loading TVRecommender..."
 
@@ -58,6 +52,7 @@ hSetTranslit h = do
             enc' <- mkTextEncoding $ name ++ "//TRANSLIT"
             hSetEncoding h enc'
         _ -> return ()
+--END
 
 
 -- I discussed ideas on how to implement two-worded commands with Nikolaus Köstinger.
@@ -91,7 +86,9 @@ printHelp = do
   putStrLn "\t 'exit' ... terminate the application"
 
 
+{-
 -- I discussed the approach for only getting Primetime broadcasts with Nikolaus Köstinger. We came up with the solution to just drop every other element.
+--NOT WORKING RELIABLY
 --two functions to get only every other element of a list:
 dropEveryOther :: [a] -> [a] -> [a]
 dropEveryOther acc [] = acc
@@ -99,6 +96,7 @@ dropEveryOther acc (h:t) = dropEveryOther' (h : acc) t
 dropEveryOther' :: [a] -> [a] -> [a]
 dropEveryOther' acc [] = acc
 dropEveryOther' acc (_:t) = dropEveryOther acc t
+-}
 
 
 --I came up with the idea to replace special chars later on by talking to Nikolaus Köstinger.
@@ -106,9 +104,9 @@ parseSite :: IO (V.Vector (Int,String,String,String,String,String,[String]))
 parseSite = do
   --downloading website:
   siteString   <- simpleHttp "https://www.tele.at/tv-programm/2015-im-tv.html?stationType=-1&start=0&limit=500&format=raw"
-  print siteString
-  --let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
-  let site = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
+
+  let site = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack siteString
+  --let site = readString [withParseHTML yes, withWarnings no] $ L8.unpack siteString
 
   --filtering the relevant information:
   zeiten         <- runX $ site //> hasAttrValue "class" (isInfixOf "broadcast") //> hasName "strong" >>> deep getText
@@ -121,17 +119,21 @@ parseSite = do
   let sendungen = map (filter (/= '\n') . filter (/= '\t')) sendungen_ws
   let genre     = map (filter (/= '\n') . filter (/= '\t')) genre_ws
 
-  --selecting only PrimeTime broadcasts
-  let zeitenPT     = dropEveryOther [] zeiten
-  let senderPT     = dropEveryOther [] sender
-  let sendungenPT  = dropEveryOther [] sendungen
-  let genrePT      = dropEveryOther [] genre
-  let link_shortPT = dropEveryOther [] link_short
+  --selecting only PrimeTime broadcasts:
+  --NOT WORKING RELIABLY
+  --let zeitenPT     = dropEveryOther [] zeiten
+  --let senderPT     = dropEveryOther [] sender
+  --let sendungenPT  = dropEveryOther [] sendungen
+  --let genrePT      = dropEveryOther [] genre
+  --let link_shortPT = dropEveryOther [] link_short
 
-  let linkPT = map (\str -> "https://www.tele.at" ++ str) link_shortPT
+  --let linkPT = map (\str -> "https://www.tele.at" ++ str) link_shortPT
+  let linkPT = map (\str -> "https://www.tele.at" ++ str) link_short
 
   --creating tuple with basic information:
-  let zipped = zip5 zeitenPT senderPT sendungenPT genrePT linkPT
+  --let zipped = zip5 zeitenPT senderPT sendungenPT genrePT linkPT
+  let zipped = zip5 zeiten sender sendungen genre linkPT
+
 
   --sorting by station name:
   let sorted = sortOn (\(_,send,_,_,_) -> map toLower send) zipped
@@ -141,7 +143,8 @@ parseSite = do
   let numbered  =  zipWith (curry (\(n,(a,b,c,d,e)) -> (n,a,b,c,d,e))) [1..length sendungen + 1] sorted
 
   putStrLn "Got Content! Reading broadcast details..."
-  --Map der parseDetails function parallel (50% faster)
+
+  --Map der parseDetails function parallel (50% faster):
   detailed      <- PAR.mapM parseDetails numbered
   return $ V.fromList detailed
 
@@ -158,7 +161,6 @@ parseDetails (n,a,b,c,d,link) = do
   detailSiteString <- simpleHttp link
   --let detailSite    = readString [withParseHTML yes, withWarnings no] $ L8.unpack detailSiteString
   let detailSite      = readString [withParseHTML yes, withWarnings no] $ decode $ LBS.unpack detailSiteString
-
 
   --getting relevant information (text and actors):
   text   <- runX $ detailSite //> hasAttrValue "class" (== "long-text") >>> deep getText
@@ -218,7 +220,6 @@ listActors = do
     else putStrLn $ unlines $ Set.toAscList actorList
 
 
---TODO: check for any upper/lowercase variants before adding new actor
 addActor :: String -> IO () --adds a new actor to txt file
 addActor name = do
   actorList <- readActors
@@ -237,6 +238,7 @@ removeActor name = do
   let !newActorList = Set.foldl (\acc a -> if map toLower name == map toLower a then acc else Set.insert a acc) Set.empty actorList
   writeFile "actors.txt" $ unlines $ Set.toAscList newActorList
 
+
 recommend :: IO [(Int, String, String, String, String, String, [String])] -> IO ()
 recommend bclIO = do
   --loading favourite actors and list of broadcasts:
@@ -246,6 +248,7 @@ recommend bclIO = do
   let favActors = map (map toLower) (Set.toList favActorsSet)
   --let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> if a `elem` favActors then True else acc) False bcActors ) bcl
   --filter those broadcasts that contain at least one of the favourite actors:
+  --going through every item in bcl and filtering those that contain at least one of the favourite actors
   let recommendations = filter (\(_,_,_,_,_,_,bcActors) -> foldr (\a acc -> (map toLower a `elem` favActors) || acc) False bcActors ) bcl
   --adding tuple to one continuous string and selecting which actors to show:
   let addRecommendation (n,t_zeit,t_sender,t_sendung,t_genre,_,t_actors) = printf "%03d." n ++ " " ++ t_zeit ++ " " ++ printf "%- 16s" t_sender ++ " " ++ t_sendung ++ " (featuring: " ++ intercalate ", " (filter (\a -> map toLower a `elem` favActors) t_actors) ++ "), " ++ t_genre
