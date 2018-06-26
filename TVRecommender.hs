@@ -61,7 +61,7 @@ mainMenu info = do
   putStrLn "\nPlease enter a command or type 'help' for assistance!"
   input <- getLine
   if null input then mainMenu info else --check if input is empty
-    if head (words input)=="show" && (2 == length (words input)) then showBroadcast (read $ head $ tail $ words input) info >> mainMenu info else --check if input is show
+    if head (words input)=="show" && (2 == length (words input)) then showCaller (head $ tail $ words input) info >> mainMenu info else --check if input is show
       case map toLower $ unwords $ take 2 $ words input of
         "list"         -> listBroadcasts info >> mainMenu info
         "add actor"    -> addActor (unwords $ drop 2 $ words input) >> mainMenu info
@@ -71,6 +71,19 @@ mainMenu info = do
         "help"         -> printHelp >> mainMenu info
         "exit"         -> putStrLn "Thanks for using TVRecommender!"
         _              -> putStrLn ("Command '" ++ input ++ "' is unknown!") >> mainMenu info
+
+
+showCaller :: String -> IO (V.Vector(Int,String,String,String,String,String,[String])) -> IO () --checks input on show command
+showCaller x infoIO = do
+  info <- infoIO
+  let vlength = V.length info
+  if isNumber $ head x then
+    if (read x ::Int) < 1 || (read x::Int) > vlength then
+      putStrLn $ show x ++ " is not a valid Number!"
+    else
+      showBroadcast (read x::Int) infoIO
+  else
+    putStrLn "Please enter a number!"
 
 
 printHelp :: IO () --show list of all the possible commands
